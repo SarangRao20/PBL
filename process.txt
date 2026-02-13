@@ -1,0 +1,21 @@
+process carried out : 
+- phase 1: 
+	making of the virtual environment
+	making of the requirements.txt and clean installing them 
+
+	getting an api key from openrouter for later use
+
+-phase 2:
+	Data Ingestion ( pdf first, paper aligned)
+
+	we need to convert module content -> clean text chunks
+
+	sources could be pdfs ( handbooksm syllabus, notes etc),
+	webpages,
+	announcements
+
+	in phase 2,  we focus on the pdf ingestion pipeline 
+
+	we firstly import the pypdf library
+
+	
