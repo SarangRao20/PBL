@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # ---------- CONFIG ----------
 
-EMBEDDINGS_FILE = "C://Users//Sarang//OneDrive//Desktop//PBL//data//embeddings//embeddings.csv"
+EMBEDDINGS_FILE = "data/embeddings/embeddings.csv"
 
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 EMBED_MODEL = "nomic-embed-text"

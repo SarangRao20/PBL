@@ -1,7 +1,9 @@
-import os 
+import os
 
-TEXT_DIR = "C://Users//Sarang//OneDrive//Desktop//PBL//data//extracted_text"
-OP_FILE= "C://Users//Sarang//OneDrive//Desktop//PBL//data//chunks//chunks.txt"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+TEXT_DIR = os.path.join(BASE_DIR, "data", "extracted_text")
+OP_FILE = os.path.join(BASE_DIR, "data", "chunks", "chunks.txt")
 
 chunk_size = 500
 overlap = 50

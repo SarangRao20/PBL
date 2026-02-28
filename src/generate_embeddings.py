@@ -3,8 +3,10 @@ import requests
 import pandas as pd
 from tqdm import tqdm
 
-chunk_file = "C://Users//Sarang//OneDrive//Desktop//PBL//data//chunks//chunks.txt"
-out_file = "C://Users//Sarang//OneDrive//Desktop//PBL//data//embeddings//embeddings.csv"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+chunk_file = os.path.join(BASE_DIR, "data", "chunks", "chunks.txt")
+out_file = os.path.join(BASE_DIR, "data", "embeddings", "embeddings.csv")
 
 with open(chunk_file, encoding = "utf-8") as f:
     raw = f.read()

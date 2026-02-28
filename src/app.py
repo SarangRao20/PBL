@@ -1,13 +1,16 @@
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from flask import Flask, render_template, request
 from answer_generation import embed_query, cosine_similarity, build_prompt, call_llm
 import pandas as pd
 import numpy as np
 import ast
 
+
 app = Flask(__name__, template_folder="../templates")
 
 # ---------- CONFIG ----------
-EMBEDDINGS_FILE = "C://Users//Sarang//OneDrive//Desktop//PBL//data//embeddings//embeddings.csv"
+EMBEDDINGS_FILE = os.path.join(BASE_DIR, "data", "embeddings", "embeddings.csv")
 TOP_K = 3
 # ---------------------------
 

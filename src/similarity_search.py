@@ -3,7 +3,7 @@ import numpy as np
 import ast
 import requests
 
-EMBEDDINGS_FILE = "C://Users//Sarang//OneDrive//Desktop//PBL//data//embeddings//embeddings.csv"
+EMBEDDINGS_FILE = os.path.join(BASE_DIR, "data", "embeddings", "embeddings.csv")
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 EMBED_MODEL = "nomic-embed-text"
 TOP_K = 3
