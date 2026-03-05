@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 EMBED_MODEL = "nomic-embed-text"
-TOP_K = 3
+SIMILARITY_THRESHOLD = 0.65  # Retrieval cutoff
+TOP_K = 5 # Fallback max chunks
 
 load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -59,7 +60,58 @@ def retrieve_top_chunks(query_vec, role_filter="student", author_filter=None):
         
     # Sort descending
     scored_chunks.sort(key=lambda x: x[0], reverse=True)
-    return scored_chunks[:TOP_K]
+    
+    # Threshold-based filtering
+    filtered_chunks = [c for c in scored_chunks if c[0] >= SIMILARITY_THRESHOLD]
+    
+    # Return at least TOP_K if threshold is too strict, but filtered is preferred
+    return filtered_chunks if filtered_chunks else scored_chunks[:TOP_K]
+
+def refine_chunks_with_feedback(message_id, suggestion):
+    """
+    Self-Correcting Loop: Takes a professor's suggestion and the chunks that led to the answer,
+    generates refined chunks, and updates the knowledge base.
+    """
+    conn = sqlite3.connect(SQLITE_DB_PATH)
+    cursor = conn.cursor()
+    
+    # 1. Get the original chunks used (This requires tracking which chunks were used)
+    # For now, we'll re-retrieve based on the user's last question in this session
+    cursor.execute("SELECT content FROM messages WHERE id = (SELECT MAX(id) FROM messages WHERE id < ? AND role='user')", (message_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False
+    
+    question = row[0]
+    query_vec = embed_query(question)
+    top_chunks = retrieve_top_chunks(query_vec)
+    
+    refined_results = []
+    for sim, text in top_chunks:
+        prompt = f"""
+You are an expert academic editor. A professor has provided a suggestion to improve the accuracy of a research assistant.
+Original Chunk:
+{text}
+
+Professor's Suggestion/Correction:
+{suggestion}
+
+TASK: Rewrite the Original Chunk to incorporate the Professor's suggestion perfectly. 
+Maintain the academic tone. Do not add conversational filler. Output ONLY the refined text.
+"""
+        refined_text = call_llm(prompt)
+        new_vec = embed_query(refined_text)
+        
+        # Update the specific chunk in DB
+        # Note: In a production system, we'd use UUIDs for chunks. 
+        # Here we match by exact text or ID if we had it.
+        cursor.execute("UPDATE knowledge_base SET text_chunk = ?, embedding = ? WHERE text_chunk = ?", 
+                       (refined_text, json.dumps(new_vec.tolist()), text))
+        
+    conn.commit()
+    conn.close()
+    return True
 
 def build_prompt(question, chunks, negative_constraints=""):
     sources_text = ""
@@ -68,21 +120,24 @@ def build_prompt(question, chunks, negative_constraints=""):
 
     constraint_text = f"IMPORTANT RULE(S) FROM USER FEEDBACK: {negative_constraints}\n" if negative_constraints else ""
 
-    prompt = f"""
-You are an academic assistant.
-
-{constraint_text}
-Answer the question using ONLY the sources below.
-If the answer cannot be found in the sources, say:
-"I could not find this information in the provided material."
-
-Sources:
+    system_prompt = f"""
+You are a senior research assistant. Use the following chunks to answer:
 {sources_text}
 
-Question:
-{question}
+Negative Constraints (What NOT to do):
+{negative_constraints}
+
+INSTRUCTIONS:
+1. Maintain a high-end, academic tone.
+2. If the explanation involves a process, workflow, sequence, or architecture (especially coding), generate a Mermaid.js diagram.
+   Use the format: ```mermaid
+   [diagram code]
+   ```
+3. Do not use emojis. Use professional language.
+4. Keep citations subtle but factual. Mention specific sources if needed.
 """
-    return prompt.strip()
+    full_prompt = f"{system_prompt}\n\nUSER QUESTION: {question}"
+    return full_prompt.strip()
 
 def call_llm(prompt):
     response = requests.post(

@@ -9,7 +9,9 @@ def autonomous_web_search(query, role="student", author="System"):
     print(f"Autonomous search triggered for: {query}")
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=2))
+            # Refine query for research context
+            academic_query = f"{query} academic research paper definition"
+            results = list(ddgs.text(academic_query, max_results=3))
             
         sources_added = 0
         for res in results:

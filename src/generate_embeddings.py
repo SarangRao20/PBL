@@ -25,17 +25,21 @@ def embed(text):
         print("Error embedding chunk:", e)
         return None
 
-def ingest_chunks_to_db(chunks, role="teacher", author="Professor", doc_type="core_material"):
+def ingest_chunks_to_db(chunks, role="teacher", author="Professor", doc_type="core_material", job_id=None, progress_callback=None):
     """
     Ingest text chunks into SQLite database with metadata and JSON embeddings.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     count = 0
+    total = len(chunks)
     
-    for chunk in tqdm(chunks, desc="Generating Embeddings"):
+    for i, chunk in enumerate(tqdm(chunks, desc="Generating Embeddings")):
         if not chunk.strip():
             continue
+        
+        if progress_callback:
+            progress_callback(job_id, i, total, f"Embedding chunk {i+1} of {total}...")
             
         vector = embed(chunk)
         if vector is None:
@@ -53,9 +57,15 @@ def ingest_chunks_to_db(chunks, role="teacher", author="Professor", doc_type="co
     conn.close()
     
     if count:
-        print(f"✅ Successfully ingested {count} chunks to SQLite Knowledge Base.")
+        msg = f"✅ Successfully ingested {count} chunks to SQLite Knowledge Base."
+        print(msg)
+        if progress_callback:
+            progress_callback(job_id, total, total, "Ingestion complete!")
     else:
-        print("⚠️ No valid chunks to ingest.")
+        msg = "⚠️ No valid chunks to ingest."
+        print(msg)
+        if progress_callback:
+            progress_callback(job_id, total, total, msg)
 
 if __name__ == "__main__":
     # Test migration from old chunks.txt

@@ -3,43 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q-Module-Bot | AI Teaching Assistant</title>
+    <title>PBL Research Platform | AI Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Markdown parser -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    </script>
 </head>
 <body data-role="{{ role }}">
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <h2 class="logo">Q-Module-Bot</h2>
+        <div class="logo">Research AI</div>
         
-        <div class="role-selector">
-            <label>Login As:</label>
-            <select id="roleSelect" onchange="changeRole()">
-                <option value="student" {% if role == 'student' %}selected{% endif %}>Student</option>
-                <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>Teacher / Professor</option>
-            </select>
-        </div>
-
         <div class="menu">
-            <button class="nav-btn active" onclick="switchTab('chat')">💬 Chat & Ask</button>
-            <button class="nav-btn teacher-only" onclick="switchTab('knowledge')">📚 Knowledge Base</button>
+            <button class="nav-btn active" onclick="switchTab('chat')">
+                <i data-lucide="message-square"></i> Chat
+            </button>
+            <button class="nav-btn teacher-only" onclick="switchTab('knowledge')">
+                <i data-lucide="database"></i> Knowledge Base
+            </button>
+            <button class="nav-btn teacher-only" onclick="switchTab('analytics')">
+                <i data-lucide="bar-chart-2"></i> Analytics
+            </button>
         </div>
 
-        <div class="ingestion-tools">
-            <h4>Add Context</h4>
-            <div class="input-group">
-                <input type="text" id="scrapeUrl" placeholder="Enter URL to scrape">
-                <button onclick="scrapeUrl()">Scrape</button>
+        <div class="ingestion-tools teacher-only" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <p style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 1rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.1em;">Data Ingestion</p>
+            
+            <div class="input-block">
+                <input type="text" id="scrapeUrl" placeholder="URL to index">
+                <button onclick="scrapeUrl()" class="ingest-btn">Index URL</button>
             </div>
             
-            <div class="input-group" style="margin-top: 10px;">
-                <input type="file" id="uploadDoc" accept=".pdf,.txt" style="font-size: 11px; padding: 5px; cursor: pointer;">
-                <button onclick="uploadDocument()">Upload</button>
+            <div class="input-block">
+                <div class="file-input-wrapper">
+                    <input type="file" id="uploadDoc" accept=".pdf,.txt">
+                </div>
+                <button onclick="uploadDocument()" class="ingest-btn">Upload File</button>
             </div>
-            <p id="scrapeStatus" class="status-msg"></p>
+            
+            <p id="scrapeStatus" class="status-msg" style="margin-top: 0.5rem; font-size: 0.7rem;"></p>
+            
+            <div id="progressContainer" style="display: none; margin-top: 0.5rem;">
+                <div class="progress-bar-bg">
+                    <div id="progressBar" class="progress-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-footer" style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+            <button class="nav-btn" onclick="window.location.href='/logout'" style="margin-bottom: 0;">
+                <i data-lucide="log-out"></i> Sign Out
+            </button>
         </div>
     </div>
 
@@ -51,15 +70,16 @@
             <div class="chat-container">
                 <div id="chatHistory" class="chat-history">
                     <div class="message assistant">
+                        <span class="sender-info">Research Assistant</span>
                         <div class="bubble">
-                            <p>Hello! I am your AI teaching assistant. How can I help you with your module learning today?</p>
+                            <p>System initialized. Ready for research inquiries. I will answer based on your uploaded knowledge base and verified sources.</p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="input-container">
-                    <input type="text" id="chatInput" placeholder="Ask a question about the module..." onkeypress="handleKeyPress(event)">
-                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                    <input type="text" id="chatInput" placeholder="Enter research query..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">Analyze</button>
                 </div>
             </div>
         </div>
@@ -67,30 +87,49 @@
         <!-- Tab 2: Knowledge Base (Teacher Only) -->
         <div id="knowledgeTab" class="tab-content teacher-only">
             <div class="dashboard-header">
-                <h2>Knowledge Base Editor</h2>
-                <p>Human-in-the-loop: Edit or remove text chunks to heal the AI's responses.</p>
-                <button onclick="loadKnowledgeBase()">🔄 Refresh Chunks</button>
+                <h2>Knowledge Base Console</h2>
+                <p>Edit or refine text chunks to improve the self-correcting RAG loop.</p>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button class="send-btn" onclick="loadKnowledgeBase()" style="background-color: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">Refresh Database</button>
+                </div>
             </div>
             
             <div class="table-container">
                 <table id="kbTable">
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>Author</th>
-                            <th>Text Chunk</th>
-                            <th>Actions</th>
+                            <th>Origin</th>
+                            <th>Lead Author</th>
+                            <th>Chunk Content</th>
+                            <th style="text-align: right;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="kbBody">
-                        <!-- Loaded via JS -->
+                        <!-- Content populated via script.js -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Analytics (Placeholder for Professor) -->
+        <div id="analyticsTab" class="tab-content teacher-only">
+            <div class="dashboard-header">
+                <h2>Research Analytics</h2>
+                <p>Visualizing knowledge distribution and query patterns.</p>
+            </div>
+            <div class="table-container" style="display: flex; justify-content: center; align-items: center; min-height: 400px; color: var(--text-secondary);">
+                <div style="text-align: center;">
+                    <i data-lucide="bar-chart" style="width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>Analytics Engine Initializing...</p>
+                </div>
             </div>
         </div>
 
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
