@@ -1,26 +1,23 @@
-import pandas as pd
+import sqlite3
 import numpy as np
-import ast
+import json
 import requests
 import os
 from dotenv import load_dotenv
 
-# ---------- CONFIG ----------
-
-EMBEDDINGS_FILE = "C://Users//Sarang//OneDrive//Desktop//PBL//data//embeddings//embeddings.csv"
-
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 EMBED_MODEL = "nomic-embed-text"
-
-TOP_K = 3   # number of chunks to use
-
-# ----------------------------
+TOP_K = 3
 
 load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+SQLITE_DB_PATH = "C://Users//Sarang//OneDrive//Desktop//PBL//data//chat_history.db"
 
 def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    try:
+        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    except Exception:
+        return 0
 
 def embed_query(query):
     response = requests.post(
@@ -34,22 +31,47 @@ def embed_query(query):
     response.raise_for_status()
     return np.array(response.json()["embedding"])
 
-df = pd.read_csv(EMBEDDINGS_FILE)
+def retrieve_top_chunks(query_vec, role_filter="student", author_filter=None):
+    """
+    Retrieves the top-K chunks from SQLite using cosine similarity.
+    Filters by role/author (Teacher's core material + Student's personal notes).
+    """
+    conn = sqlite3.connect(SQLITE_DB_PATH)
+    cursor = conn.cursor()
+    
+    # Simple multi-tenancy filter
+    # If Student: retrieve all 'teacher' roles + 'student' roles matching their author_filter
+    if role_filter == "student":
+        cursor.execute("SELECT text_chunk, embedding FROM knowledge_base WHERE role='teacher' OR (role='student' AND author=?)", (author_filter,))
+    else:
+        # If Teacher: retrieve just 'teacher' roles
+        cursor.execute("SELECT text_chunk, embedding FROM knowledge_base WHERE role='teacher'")
+        
+    rows = cursor.fetchall()
+    conn.close()
+    
+    scored_chunks = []
+    for row in rows:
+        text_chunk = row[0]
+        db_vec = np.array(json.loads(row[1]))
+        sim = cosine_similarity(query_vec, db_vec)
+        scored_chunks.append((sim, text_chunk))
+        
+    # Sort descending
+    scored_chunks.sort(key=lambda x: x[0], reverse=True)
+    return scored_chunks[:TOP_K]
 
-# Convert stringified embeddings back to vectors
-df["embedding"] = df["embedding"].apply(ast.literal_eval)
-df["embedding"] = df["embedding"].apply(np.array)
-
-print(f"Loaded {len(df)} embedded chunks")
-
-def build_prompt(question, chunks):
+def build_prompt(question, chunks, negative_constraints=""):
     sources_text = ""
     for i, chunk in enumerate(chunks, start=1):
         sources_text += f"[Source {i}]\n{chunk}\n\n"
 
+    constraint_text = f"IMPORTANT RULE(S) FROM USER FEEDBACK: {negative_constraints}\n" if negative_constraints else ""
+
     prompt = f"""
 You are an academic assistant.
 
+{constraint_text}
 Answer the question using ONLY the sources below.
 If the answer cannot be found in the sources, say:
 "I could not find this information in the provided material."
@@ -80,41 +102,3 @@ def call_llm(prompt):
     )
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
-
-# ---------- MAIN PIPELINE ----------
-
-# question = input("\nEnter your question: ")
-
-# # Embed query
-# query_vec = embed_query(question)
-
-# # Compute similarity
-# df["similarity"] = df["embedding"].apply(
-#     lambda x: cosine_similarity(query_vec, x)
-# )
-
-# # Select top-K chunks
-# top_chunks = df.sort_values(
-#     by="similarity", ascending=False
-# ).head(TOP_K)
-
-# chunk_texts = top_chunks["text"].tolist()
-# scores = (top_chunks["similarity"] * 100).round(2).tolist()
-
-# # Build prompt
-# prompt = build_prompt(question, chunk_texts)
-
-# if max(scores) < 60:
-#     print("\nANSWER:\n")
-#     print("Insufficient relevant information found to answer confidently.")
-#     exit()
-# # Generate answer
-# answer = call_llm(prompt)
-
-# # Display output
-# print("\nANSWER:\n")
-# print(answer)
-
-# print("\nSOURCES USED:\n")
-# for i, score in enumerate(scores, start=1):
-#     print(f"Source {i} — Relatedness: {score}%")

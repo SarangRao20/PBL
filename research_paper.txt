@@ -1,0 +1,959 @@
+IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024 793
+Q-Module-Bot: A Generative AI-Based Question
+and Answer Bot for Module Teaching Support
+Mia Allen , Usman Naeem , Senior Member, IEEE, and Sukhpal Singh Gill
+Abstract—Contributions: In this article, a generative artiﬁcial
+intelligence (AI)-based Q&A system has been developed by
+integrating information retrieval and natural language processing
+techniques, using course materials as a knowledge base and
+facilitating real-time student interaction through a chat interface.
+Background: The rise of advanced AI exempliﬁed by ChatGPT
+developed by OpenAI, has sparked interest in its application
+within higher education. AI has the potential to reshape education
+delivery through chatbots and related tools, improving remote
+learning and mitigating challenges, such as student isolation
+and educator administrative burdens. Yet, ChatGPT’s practical
+applications in education remain uncertain, potentially due to
+its novel and enigmatic nature. Additionally, current e-learning
+chatbot systems often suffer from development complexity and a
+lack of input from key stakeholders, leading to developer-focused
+solutions rather than user-centered ones.
+Intended Outcomes: In this manuscript, we introduce a
+practical implementation of AI in education by creating a
+system called Q-Module-Bot that is accessible for both technical
+and nontechnical educators to harness e-learning beneﬁts and
+demystify generative pretraining transformer (GPT).
+Application Design: The proposed Q-Module-Bot system has
+utilized pretrained large language models (LLMs) to build a
+Q&A system that helps students with their queries and supports
+education delivery using content extracted from a virtual learning
+environment (VLE).
+Findings: The prototype and system evaluation conﬁrm the
+effectiveness of a scalable cross-departmental tool featuring
+source attribution and real-time responses. While successful
+in encouraging wider acceptance of GPT use cases in higher
+education, reﬁnements are needed for full integration into the
+VLE and expansion to other modules/courses.
+Index Terms—Artiﬁcial intelligence (AI), chatbots, ChatGPT,
+e-learning, generative AI, information retrieval (IR), virtual
+learning environment (VLE).
+I. I NTRODUCTION
+T
+HE SURGE in online learning, accelerated by the
+COVID-19 pandemic, has driven a need for broader
+adoption of digitally enabled higher-education services [1],
+[27], [28]. Virtual learning environments (VLEs) emerged as
+valuable platforms for facilitating interaction and engagement
+Manuscript received 19 September 2023; revised 2 May 2024 and 24 July
+2024; accepted 25 July 2024. Date of publication 7 August 2024; date of
+current version 8 October 2024. (Corresponding author: Usman Naeem.)
+The authors are with the School of Electronic Engineering and Computer
+Science, Queen Mary University of London, E1 4NS London, U.K. (e-mail:
+m.allen@se20.qmul.ac.uk; u.naeem@qmul.ac.uk; s.s.gill@qmul.ac.uk).
+This article has supplementary downloadable material available at
+https://doi.org/10.1109/TE.2024.3435427, provided by the authors.
+Digital Object Identiﬁer 10.1109/TE.2024.3435427
+in education delivery. The increasing prevalence of digital
+education services has brought to the forefront the critical
+need to equip educators, students, and academic support
+teams with the appropriate tools to operate in fully remote
+or hybrid settings seamlessly. As such, it has become of
+utmost importance to ensure that all stakeholders (students,
+teaching and administrative staff) have access to the requisite
+resources to enable them to participate actively in the digital
+learning environment [2], [29], [30]. Higher-education services
+commonly offer technologies that support online student com-
+munication, such as video technology for managing remote
+lectures, emails, and forums for queries. However, limitations,
+such as minimal online student participation in video meetings
+and forums, as well as delayed academic responses to student
+queries from online messages and emails, are common, as well
+as the capacity for training and support required to effectively
+utilize these systems, which pose signiﬁcant challenges for
+many institutions [7], [24].
+Artiﬁcial intelligence (AI) technology presents an opportu-
+nity to alleviate some of these challenges, potentially reducing
+administrative burden and mitigating associated stress related
+to those responsible for delivering education services [18].
+AI and chatbots have been introduced in the education sector
+as one solution to support teaching services and enhance
+student experiences online, and existing solutions span from
+support bots to virtual teaching assistants [32]. Nevertheless,
+neglecting stakeholder perspectives during the developmental
+phase, which encompasses content delivery and student sup-
+port roles, including those who would eventually implement
+and manage these tools, could result in less efﬁcient systems
+that fail to align with user needs [33]. Hence, it remains
+imperative to incorporate the valuable insights of academic
+educators and teaching services stakeholders throughout the
+requirements-gathering process [14], [22]. Furthermore, cur-
+rent solutions disregard the critical aspect of tailoring the
+system to module-speciﬁc requirements that can be scaled
+across modules/courses, and equally essential is the provision
+of user-friendly interfaces designed to accommodate educators
+who lack technical expertise yet intend to use the system
+to deliver their own content effectively. Integrating novel
+technology in education can face obstacles due to uncer-
+tainty surrounding attitudes and knowledge of its real-world
+applications within universities [34]. In some institutions,
+departments choose to steer clear of technology implemen-
+tation into teaching [13], with those who oppose digital
+adoption arguing they see no notable impact on the learning
+outcomes when technology is incorporated into the educational
+0018-9359 c⃝ 2024 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+794 IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024
+process [21]. The integration of educational technology in
+higher education for the beneﬁt of both educators and students
+does not always lead to seamless integration into instruction,
+and recommendations for integration include the establishment
+of clear goals, which include understanding stakeholders’
+attitudes toward technology, integrating strategies to reshape
+negative perceptions and working on what good adoption
+looks like [13], [21]. Furthermore, there are arguments for
+those delivering education to move focus from whether to use
+technology for instruction to determine how to successfully
+integrate and spread technology for educational enhancement
+while comprehending the context of technology and education
+and meeting the evolving needs of students [21]. These
+complexities often lead to a decelerated adoption of innovative
+approaches, further compounded by the imperative need to
+address ethical concerns. However, to facilitate the adoption of
+a solution, it is imperative that stakeholders are aligned with
+the intended outcomes, the solution is put through testing, and
+its use is both convenient and user-friendly [17].
+A. Main Contributions
+The work in this article presents “Q-Module-Bot,” a tool
+that is speciﬁcally designed for educational delivery. The
+tool utilizes a knowledge base that is sourced from course
+material (namely, the Electronic Engineering and Computer
+Science Capstone Project module) that has been scraped
+from Queen Mary University of London (QMUL)’s VLE
+known as “QMPlus.” The primary objective of this tool is
+to address pedagogical challenges encountered in academic
+settings. These challenges include limited student engagement
+with module content and inadequate feedback loops between
+students and educators. As a result, academic responses to
+student queries from online messages and emails are often
+delayed. Q-Module-Bot has the potential to enhance student
+engagement and accessibility while also alleviating the burden
+on educators. This system provides actionable insights for
+educators, empowering them with the necessary tools to
+improve their instructional practices. This includes the ability
+to replicate the AI chatbot, thereby enabling customization and
+adaptation to individual teaching environments. The system
+is the ﬁrst of its kind to utilize a generative pretraining
+transformer (GPT) speciﬁcally tailored for taught university
+modules and is supported by evaluation data from staff and
+students at QMUL. This represents an innovative approach to
+enhancing educational quality in the Electronic Engineering
+and Computer Science curriculum by leveraging pretrained
+large language models (LLMs) for a Question and Answer
+(Q&A) system. This system employs information retrieval (IR)
+and natural language processing (NLP) methods to efﬁciently
+deliver answers, marking a novel implementation of GPT-3
+turbo for educational purposes.
+The remainder of this article is structured as follows:
+Section II explores the context of recent advancements in
+AI and chatbot applications in education, examines exist-
+ing efforts, assesses available technology frameworks, and
+presents stakeholder user study results. Section III outlines pri-
+mary and secondary research-derived high-level requirements,
+followed by a strengths, weaknesses, opportunities, threats
+(SWOTs) analysis that informs the system’s technical design
+and implementation, including the data pipeline. Section IV
+presents a user system evaluation, followed by Sections V
+and VI that conclude this article and suggest avenues for future
+development.
+II. B
+ACKGROUND
+This section examines the background of recent develop-
+ments in AI and chatbot applications in education, reviews
+current initiatives, evaluates accessible technological frame-
+works, and presents stakeholder user research ﬁndings.
+A. AI Chatbots and ChatGPT
+The development of AI and chatbot technology has evolved
+signiﬁcantly since its inception in the 1950s, with a huge
+estimated market size of 1.23 billion USD expected by
+2025 [8]. Early breakthroughs with chatbots, such as the
+creation of the ELIZA Program in the 1960s, marked the
+start of an exploration of AI’s potential to emulate and
+participate in human conversation, leading to the emergence
+of sophisticated chatbots capable of understanding natural
+language and responding to complex queries [9]. In the past
+year, OpenAI’s ChatGPT has revolutionized the space and
+catapulted the technology to a global platform. ChatGPT
+utilizes GPT architecture, leveraging NLP and machine learn-
+ing (ML) techniques to facilitate seamless and intelligent
+conversational interactions with users. Unlike previous AI,
+ChatGPT is a generative AI that can produce new content
+in real-time conversations. It has the ability to maintain a
+persona, allowing for more realistic and engaging dialogues as
+a result of training on vast conversational datasets [12].T h e
+release of ChatGPT has gained signiﬁcant attention since the
+release of GPT-3 and Davinci models in late 2022. ChatGPT
+managed to amass 100 million monthly active users in just two
+months since its launch, emphasizing the immediate impact
+and future potential of the technology [35]. This unprecedented
+growth solidiﬁes its position as the fastest-growing online user
+application ever recorded with an average of around 13 million
+unique visitors engage with ChatGPT daily [20]. With its
+remarkable ability to comprehend intricate requests, ChatGPT
+is changing the way we engage with technology across the
+world, introducing possibilities for enhanced user experiences
+as industries explore diverse use cases [9].
+B. Chatbots in Higher-Education Delivery
+Education is one of many sectors that has adopted AI
+chatbots within institutions to support business operations
+and efﬁciency and ultimately improve student learning out-
+comes [6], [31]. The popularity of platforms and tools which
+support online learning is not new, with prepandemic levels
+of students enrolled in online or hybrid university courses at
+6.7 million in the U.S., and 32% of all university student
+enrolments to a fully online course recorded as early as
+2012 [15]. It is noteworthy that the recent emergence of
+disruptive language models, coupled with their user-friendly
+chat interfaces, has had a profound impact on the academic
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+ALLEN et al.: Q-Module-Bot: A GENERATIVE AI-BASED QUESTION AND ANSWER BOT 795
+landscape. However, there are concerns regarding their appli-
+cation, particularly in relation to online examinations and
+coursework plagiarism, with arguments that ChatGPT could
+be used to cheat on essay assignments and online exams [9].
+Plagiarism is a growing issue in higher education due to
+students’ growing dependence on online sources for research
+and information, enabled by easy accessibility, resulting in
+a surge in behaviors lacking citation and subsequent serious
+consequences, including academic failure [9]. The technology
+has attracted signiﬁcant media attention, as exempliﬁed by a
+recent media article outlining the “educators battle” against
+plagiarism, describing ChatGPT as “the greatest cheating tool
+ever invented” [23]. A survey conducted earlier this year by
+Study.com, a VLE platform, with over 100 educators and
+1000 students of college and higher-level education, reports
+that 89% of students have used ChatGPT to help with a home-
+work assignment [24]. To offer guidance to educators on the
+use of technology, OpenAI [19] has issued recommendations
+for integrating technology into education. These suggestions
+encompass drafting lesson plans, designing exercises, and
+providing feedback on writing and coding. OpenAI also
+afﬁrms it is essential to acknowledge that there are education-
+related risks, and there is an emphasis on introduction to
+the classroom under the supervision of educators. The rapid
+advancement of AI technology has brought about a shift in the
+traditional notions of attribution and originality. Consequently,
+it has become imperative for education providers to facilitate
+the integration of OpenAI’s technology into university class-
+rooms. Such integration should be done in recognition of the
+fact that students are already utilizing this technology. It is
+essential to tap into the full potential of OpenAI’s technology
+while ensuring its implementation aligns with the educational
+objectives and requirements of the institutions [9].
+C. AI Chatbots and ChatGPT
+Prior studies on e-learning technology adoption emphasize
+the signiﬁcance of forming an online community to enhance
+student satisfaction with online learning, as community-
+building fosters an environment akin to physical classrooms,
+promoting inclusivity and social support among peers and
+lecturers, facilitating information exchange and leading to
+positive student outcomes [15]. In higher education, learner-
+instructor interaction refers to the exchange between lecturers
+and students and is relevant to face-to-face and online teaching
+approaches. In the context of learner-instructor interaction, the
+instructor’s primary responsibilities include igniting student
+interest in the course content, motivating learners, and facili-
+tating the learning process [6]. Student satisfaction levels in an
+online taught university reveal that satisfaction is closely tied
+to the fulﬁlment of a student’s interpersonal communication
+needs, as they highly value communication and individual,
+personal responses as part of their interactions [5].T h i s
+is made complex in higher-education settings, where class
+sizes can play a crucial role in shaping the dynamics of
+academic instruction and student engagement. Smaller class
+sizes tend to promote improved and more intimate interactions
+between students and educators, fostering stronger rapport.
+However, the reality in many universities is that class sizes
+are often quite large, with a ratio as high as one student
+to tens or hundreds for lecturers, depending on the course
+and institution. Consequently, creating meaningful personal
+interactions becomes inherently more challenging [4]. Despite
+the beneﬁts of student forums and discussion boards, which are
+features of many VLEs and for remote courses can facilitate
+building relationships and communication channels between
+instructor and student [7], they are often under-utilized due
+to challenges native to online public forums, such as students
+feeling uncomfortable about asking questions in public view
+of other students as well as delayed response times [24].
+Educational chatbots are gaining popularity as a cost-effective
+solution for delivering personalized learning experiences when
+it comes to higher education [10] and is arguably one of the
+most exciting and engaging tools to promote these experiences
+through VLE platforms [11]. Students are highly adept at
+using various platforms and receiving responses in real-time,
+such as Meta-owned WhatsApp, Facebook, and Instagram
+for communication. Chatbots represent a valuable opportunity
+to provide university-related information to students instanta-
+neously. Such information may include but is not limited to,
+assessment criteria, due dates, and other relevant resources.
+While various means of interaction exist, such as email,
+student forums, and in-person communication, these methods
+lack the capability to offer personalized communication that
+is readily accessible at all times [4]. Personalization can
+drive outcomes that facilitate relationships and trust, improve
+student engagement, and support improvements to student
+satisfaction with e-learning [7].
+D. Chatbots and Supporting Academics
+Chatbot systems have the potential to not only enhance
+student engagement and provide valuable support to students
+but also signiﬁcantly reduce the administrative workload of
+academics. By leveraging the capabilities of chatbots, these
+systems can effectively automate routine administrative tasks,
+such as answering frequently asked questions (FAQs), provid-
+ing course materials, and managing student inquiries [4], [11].
+This automation liberates academics from time-consuming
+administrative responsibilities, granting them more time and
+energy to dedicate to crucial aspects of their profession, such
+as curriculum development and research. Large class sizes
+in university courses can impose signiﬁcant administrative
+challenges on lecturers, resulting in limited time to address
+student emails and responses to student forums, which may
+get lost in overﬂowing inboxes [4].
+E. Chatbot Types, Capabilities, and Applications
+To shape the approach for this implementation, it is impor-
+tant to consider the various types of technologies available to
+develop chatbots and their distinct capabilities, which include
+both rule-based and ML-based chatbots [23]. Rule-based
+chatbots rely on predeﬁned developer-set rules, while ML-
+based chatbots are more advanced, leveraging AI to understand
+both commands and natural language. Rule-based chatbots
+have limitations and may fail to comprehend queries that do
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+796 IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024
+not match their predeﬁned data. On the other hand, ML-
+based chatbots continuously improve by learning from past
+interactions with users [16]. In some cases, a combination of
+both techniques is incorporated depending on the requirements
+of the system. In terms of applications of these types of
+systems, Q&A bots are tailored to deliver precise answers from
+a knowledge base to speciﬁc queries suitable for customer
+support and FAQs. In contrast, chatbots engage in natural
+conversations, handling diverse queries, such as open-ended
+questions and casual conversation, making them versatile for
+applications like customer service, virtual assistants, and enter-
+tainment. However, while chatbots offer dynamic interactions,
+they may not match the accuracy of Q&A bots in addressing
+speciﬁc questions due to their focus on sustaining natural
+conversations. For “Q-Module-Bot,” the focus is to respond to
+speciﬁc user queries, hence a Q&A bot seems to best ﬁt this
+use case.
+F . SWOT Analysis of Existing Applications
+A qualitative analysis of chatbots in higher-education
+e-learning is analyzed through a SWOTs framework, detailed
+in Appendix A in the supplementary material. Adaptability and
+learning capabilities, as demonstrated in systems developed
+by Sinha et al. [16] and Yang and Stansﬁeld [18], can lead
+to improved performance of the bot over time. However,
+reliance on predeﬁned responses in rules-based systems, as
+observed in Ranoliya et al. [3], may limit handling complex
+queries. Overcoming technical complexities highlighted in
+Yang and Stansﬁeld [18] and Sinha et al. [16] is crucial for
+user-friendly implementation. The precision and accuracy of
+responses, reported in systems developed by Sinha et al. [16],
+signiﬁcantly impact user satisfaction, suggesting that students
+are keen to know the responses provided are accurate. The
+emergence of competing solutions, understood by Yang and
+Stansﬁeld [18] and Ranoliya et al. [3], poses opportunities
+and threats, driving developers to explore novel technolo-
+gies. User-centered design and stakeholder input, evident in
+Yang and Stansﬁeld [18], are afﬁrmed as a consideration
+needed to capture user needs and overall system effectiveness.
+However, as observed by Sinha et al. [16] and Feng et al. [8],
+neglecting this input may result in mismatches with user
+expectations. The analysis emphasizes the importance of stake-
+holder input into the design, response precision, and usability
+when developing chatbot and Q&A systems for education
+purposes. The analysis also highlights the reliance on overly
+complex systems, which are not easy to implement, update,
+and keep relevant in light of novel technologies and cannot
+be utilized by nontechnical audiences. The existing solutions
+also lack sufﬁcient relevance for supporting module teaching,
+conﬁrming a need for a system to unlock the potential for
+enhancing e-learning experiences.
+G. Technology Frameworks
+Hugging-face, a prominent open-source platform and
+library, offers an assortment of state-of-the-art NLP models,
+including transformer-based architectures GPT-2 and bidirec-
+tional encoder representations from transformers (BERTs).
+Fig. 1. Survey results for stakeholder openness to using GPT.
+Renowned for enabling ﬁne-tuning of these models, Hugging-
+face empowers developers to customize them for speciﬁc
+tasks, enhancing adaptability. However, OpenAI’s GPT-3 takes
+precedence in this context due to its advanced NLP capabili-
+ties, which is informed by a vast and diverse training dataset.
+This equips GPT-3 to address a wide range of inquiries, includ-
+ing module-speciﬁc questions, while generating coherent and
+contextually relevant responses. OpenAI’s user-friendly API
+streamlines GPT-3 integration, simplifying development and
+deployment processes. Thus, GPT-3’s capabilities and ease of
+implementation, as well as the ability to contribute to the
+demystiﬁcation of ChatGPT, position it as the preferred choice
+for the proposed system.
+H. User Study Survey
+A user survey (Figs. 1 and 2) was conducted among
+11 members of academic stakeholders, including academics
+and teaching services, from the School of Electronic
+Engineering and Computer Science at QMUL, was conducted
+to gather insights and feedback on current pain-points for
+those responsible for education delivery. A detailed breakdown
+of the survey is outlined in Appendixes B and C in the
+supplementary material.
+I. Technology Frameworks
+The survey revealed that 82% of all participants across
+user segments were open to an implementation of a GPT-
+powered system. The need for task automation and routine
+support for academics is substantiated, with 83% of academics
+indicating daily use of QMPlus to support education delivery
+(which is greater than academic support staff averages of 10 +
+hours a week), highlighting the need for a system which can
+support “General Q&A” and “FAQs to stop general Q&A” is of
+utmost importance; further reﬂected in 60% of all participants
+agreed ﬁnding the time to respond to student queries a key
+challenge. 30% of participants perceive student engagement
+with forums and content as a key challenge, which corresponds
+with the requirement for real-time personalized responses,
+emphasising the importance of enhancing the learning experi-
+ence. There was a clear preference raised for source attribution
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+ALLEN et al.: Q-Module-Bot: A GENERATIVE AI-BASED QUESTION AND ANSWER BOT 797
+Fig. 2. Survey results for stakeholder insights into existing system limitations.
+from multiple respondents and worries concerning incorrect
+or “hallucinating” responses, aligning with the requirement
+for transparency in the literature to ensure credibility and
+trust in the responses. In terms of demand for usability,
+50% of all participants believe the system is not intuitive to
+use and resonates with the requirement for a user-friendly
+interface, ensuring ease of interaction for both students and
+staff. The technical challenges highlighted by 60% of all
+participants emphasize the urgency of efﬁcient and dependable
+technological solutions, which came as a surprise as this was
+not a common theme in the literature, afﬁrming the initial
+assumption about applications of novel technologies that are
+often developer-centric as opposed to user-centric. This high-
+lights the need for rigorous testing and addressing reliability
+concerns to prevent potential setbacks before implementation,
+which was a concern of a teaching services respondent who
+does not want a new system to introduce “another point
+of potential failure.” There are signiﬁcant opportunities for
+potential future enhancements to the prototype that could
+address these existing pain points. For example, incorporating
+support for more complex question types based on technical
+problem-solving, as suggested by an academic respondent,
+could greatly beneﬁt students. Additionally, there is potential
+to integrate the system into assessment use cases for technical
+question solving, further enhancing its value and impact. The
+intersection between the survey ﬁndings and the speciﬁed
+requirements reinforces the critical role of the proposed system
+in addressing the identiﬁed challenges and enhancing overall
+academic and student satisfaction.
+III. S
+YSTEM DESIGN METHODOLOGY
+Based on the ﬁndings in the literature, corroborated with
+user surveys, are the following requirements and user stories.
+A. Functional Requirements
+1) Q&A Functionality for Academic Support:
+User Story: As an educator, I want routine tasks like
+addressing FAQs and aiding in module material understanding
+to be automated so that I can allocate more time to teaching
+students, research and preparing learning materials.
+User Story: As a student, I want to be able to ask questions
+and receive relevant immediate responses to my queries that
+are tailored to my speciﬁc needs, ensuring a seamless and
+engaging learning experience.
+2) Source Attribution for Credibility:
+User Story: As a student, I appreciate transparency in
+learning materials. I want the system to provide clear source
+attribution to the information it presents, ensuring that I can
+trust the authenticity of the content.
+3) Adaptability for Cross-Modules and Departments:
+User Story: As an educator, I want the system to be
+adaptable to different modules and departments so that I can
+customize its responses and functionalities according to the
+speciﬁc educational needs and requirements of each module.
+B. Nonfunctional Requirements
+1) User Satisfaction:
+User Story: As a student, I expect the system to respond
+promptly to my queries, providing personalized answers that
+align with my learning goals, ultimately contributing to my
+satisfaction with the educational experience.
+User Story: As an educator, I want the proposed system
+to assist me in managing routine tasks efﬁciently so that I
+can focus on creating a rich academic environment, leading to
+enhanced satisfaction among my colleagues and students.
+2) Stakeholder Conﬁdence:
+User Story: As academic support staff, I want to ensure that
+the integration of the technology is carried out with educa-
+tor oversight, guaranteeing the system’s reliability, accuracy,
+and alignment with educational objectives, thereby building
+stakeholder conﬁdence.
+3) Usability:
+User Story: As a user of the tool, I want to interact with
+a user-friendly interface, ensuring ease of use and a positive
+user experience for students and staff.
+C. SWOT Analysis of Potential Approaches
+Appendix D in the supplementary material presents a
+strengths and weakness analysis comparing the ﬁne-tuning
+and embedding approaches. In line with the ﬁndings of this
+analysis, the implementation of the proposed approach suits
+the embedding approach, speciﬁcally utilizing the pretrained
+language model GPT-3 and OpenAI’s semantic vector text
+embedding features. This decision is supported by the beneﬁts
+highlighted in the analysis, including that in adopting pre-
+trained models, the chatbot gains access to existing knowledge,
+cost-effectiveness, and versatility across various domains, as
+well as the ability to provide a broader language understanding
+beyond module materials. Moreover, the embedding approach
+facilitates rapid prototyping and development, aligning with
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+798 IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024
+Fig. 3. System architecture of the prototype Q&A bot.
+Fig. 4. Prototype search screen.
+the implementation’s goal of promoting awareness and dis-
+cussing recommendations for conversational AI in education.
+D. System Implementation
+“Q-Module-bot” is designed to handle two main functions:
+1) searching for relevant text chunks in the knowledge base
+and 2) generating responses using GPT-3 Turbo. The proposed
+system as shown in Fig. 3 has been developed in Python,
+which incorporates a data pipeline executed within a Jupyter
+Notebook environment, facilitating sourcing module content
+via Web-scraping, preprocessing, chunking, tokenization, and
+embedding utilizing OpenAI’s Embedding API to generate
+dense vector representations of the data and store in a CSV
+ﬁle. This component ensures adaptability across modules by
+enabling easy integration of new knowledge through changes
+made exclusively to the embedding CSV ﬁle. A simple Web
+application, developed with Flask serves as the interface for
+user interaction and integrates with OpenAI’s API, including
+the Q&A component powered by GPT-3.5 Turbo. This compo-
+nent handles user queries, generates responses, and facilitates
+natural language interaction.
+E. Methodology
+Fig. 4 shows the prototype search screen. The following are
+the main components.
+1) Web-Scraping: This has been done by utilizing Beautiful
+Soup and Selenium, Python libraries used for Web
+scraping, which allows the system to extract module data
+from QMUL’s VLE.
+Fig. 5. Prototype Q&A bot response screen.
+2) Preprocessing: Pandas and Matplotlib preprocess the
+data, removing noise, tokenizing, and formatting it into
+a CSV ﬁle.
+3) Embedding: OpenAI’s embeddings API transforms the
+tokenized data into dense vector representations, which
+are then stored in a local CSV ﬁle for use within the
+Web application.
+4) Application: Flask’s Web framework serves as the main
+interface of the application and loads data from a
+CSV ﬁle containing embeddings generated from text
+chunks. These embeddings are then preprocessed and
+converted from string representations to NumPy arrays,
+ensuring efﬁcient computation. To search for relevant
+text chunks, the application implements a sophisticated
+ranking system based on the relatedness of the query to
+the content in the knowledge base; this process involves
+utilizing spatial distance computations to determine the
+similarity between embeddings. The application formu-
+lates queries for GPT-3.5 Turbo to generate responses,
+incorporating relevant source texts from the knowledge
+base (Fig. 5). When a user submits a query, the Web
+application constructs a tailored message for the GPT
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+ALLEN et al.: Q-Module-Bot: A GENERATIVE AI-BASED QUESTION AND ANSWER BOT 799
+Fig. 6. Service evaluation response—Usability.
+model, merging relevant source texts with the user’s
+input. This ensures the GPT model has contextually rel-
+evant information for more informative responses. The
+Web application then displays these responses alongside
+relevant text chunks with relatedness scores of 80% and
+above displayed in green and below in red, giving users
+a comprehensive view of the retrieved information.
+5) Inquiries: Q-Module-Bot has the capability to han-
+dle a wide range of queries, spanning from general
+information, such as assessment criteria and due dates,
+to more complex technical questions. However, the bot’s
+ability to provide accurate responses is contingent on the
+information available in its knowledge base.
+IV . S
+ERVICE EVA L UAT I O N
+To validate the system against the requirements and analyze
+the effectiveness of the system, a service evaluation was
+conducted with ﬁve academic stakeholders from the initial
+stakeholder group and ﬁve students from the M.Sc. project
+module used to test the system, which was deployed on
+Heroku. The group was asked to test the system by asking
+questions of their choice about this module. The participants
+were asked to anonymously answer a short questionnaire with
+the option for plain text feedback. The survey was created to
+reﬂect the initial requirements, with each question validating
+an initial requirement. A detailed breakdown of the results
+is presented in Appendix E in the supplementary material.
+The results were overwhelmingly positive; as seen in Fig. 6,
+90% of users either strongly agreed or agreed that “Q-Module-
+Bot” was easy to use, 100% of users either strongly agreed or
+agreed that the text chunks and relatedness scores increased
+their conﬁdence in the system, as reﬂected in Fig. 7, 100% of
+users either strongly agreed or agreed that the system could be
+extended to other modules and 100% of users either strongly
+agreed or agreed that the responses were relevant and helpful.
+V. S
+YSTEM LIMITATIONS
+Noteworthy feedback emerged from the service evaluation
+that will contribute to future enhancements. In terms of user
+feedback, evaluators noted that the “relatedness score” was too
+lengthy and suggested minor user interface adjustments, such
+as optimization of font sizes for responses and conﬁguration
+Fig. 7. Service evaluation response—Adaptability.
+of the bot, to handle direction to a relevant human, e.g., when
+responses cannot be found.
+The feedback also identiﬁed limitations in the evaluation
+process, as it focused on service assessment without a direct
+comparison to conventional search methods. The feedback
+also highlighted limitations in the evaluation process, which
+focused solely on assessing the application without directly
+comparing it to conventional search methods commonly
+used in teaching. This omission hindered a comprehensive
+understanding of the application’s potential effectiveness.
+Additionally, as the current iteration of the application serves
+primarily as a proof of concept, technically, it is clear
+that the system lacks the robustness needed for widespread
+deployment. One notable area for improvement, as revealed in
+the evaluation, is the application’s ability to handle complex
+queries effectively. While it can generate responses based
+on predeﬁned prompts and source texts, its capability to
+understand nuanced queries, especially in technical contexts,
+is limited. Moreover, reliance on predeﬁned source texts may
+restrict its ability to address queries and provide context
+beyond provided materials, though thorough prompt testing
+would be essential before integrating the application into
+academic environments to ensure appropriate responses and
+mitigate potential misuse. Furthermore, the application’s lack
+of scalability due to local operation without robust database
+storage poses a signiﬁcant obstacle, necessitating the imple-
+mentation of scalable storage solutions for efﬁcient data
+management and analysis. Additionally, updates to the user
+interface and full integration within the VLE system would
+enhance accessibility and user experience, further optimizing
+its effectiveness in educational settings. Q-Module-Bot, like
+other AI tools, may be affected by ethical issues and biases
+originating from the quality of input data, as the training data
+used for the module may be subjective. This is something that
+will be explored extensively in future iterations of this tool.
+VI. C
+ONCLUSION
+To assess the achievement of the implementation’s objec-
+tives, it is crucial to revisit the initial goals: enhancing student
+satisfaction, streamlining administrative tasks, and fostering
+the utilization of advanced AI in education. The feedback
+garnered from the service evaluation indicates a predominantly
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+800 IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024
+positive perception of “Q-Module-Bot.” The fact that 80% of
+users either strongly agree or agree that they would use the bot
+again underscores a high level of student and academic con-
+tent, reﬂecting their conﬁdence in the bot’s functionality and
+utility. However, the presence of neutral responses suggests
+an opportunity for further reﬁnement. Overall, this feedback
+points to a favorable reception of “Q-Module-Bot” among the
+users who have engaged with it, which attests to its success in
+terms of promoting AI in education and increasing satisfaction
+levels.
+In terms of alleviating administrative workload, while the
+evaluation encompassed a mixed user group of educators and
+students, the open-ended feedback suggests that enhancing
+user interface elements and ensuring the bot’s responses are
+appropriately directed to humans would aid in reducing admin-
+istrative burden. The feedback also suggested the need for an
+extended assessment period aligned with use in live module
+teaching. Thus, considering the overall positive reception,
+the potential for administrative relief, and acknowledging the
+limitations, the groundwork laid by this article encourages
+further exploration and development for a more robust and
+comprehensive implementation of “Q-Module-Bot.”
+There are also other beneﬁts to the system, as outlined in the
+background research, which support fostering the utilization of
+advanced AI in education. This includes stakeholder engage-
+ment with the implementation, ensuring the prototype system
+aligns with the educational objectives and key stakeholders
+who will be responsible for its use and maintenance are
+involved throughout the process. Finally, the step-by-step
+guide in Appendix F in the supplementary material could
+be tested by academics to understand how extendable the
+application is and deﬁne speciﬁc improvements for use across
+modules.
+Over the course of this work’s timeline, the Generative
+AI landscape has undergone substantial transformations. It
+originated with limited information and API documentation,
+which meant time spent conducting technical research prior
+to programming the system. More recently, there has been
+a notable emergence of startups employing analogous Q&A
+systems across diverse sectors, including ﬁelds like HR,
+and plenty more supporting information and development
+documentation available. The captivating ﬁnd of an active
+Facebook group composed of thousands of academics across the
+globe delving into the potentials of ChatGPT’s applications has
+been particularly illuminating to follow throughout the work,
+reﬂecting the real interest and application of this work. This
+ever-evolving and dynamic milieu underscores the perpetual
+ﬂux of the ﬁeld, signifying a continual process of innovation and
+adjustment. The aim of this contribution is to serve as one of the
+foundational use cases in education with far-reaching adoption
+possibilities for audiences with varying levels of technical
+proﬁciency. The proposed approach places emphasis on both
+implementation practicality and ease, laying the groundwork for
+a broader exploration of innovative applications in education.
+Furthermore, the system maintains alignment with current
+teaching methods and documents available without requiring
+changes to existing teaching models.
+Q-Module-Bot has the potential to bridge the gap between
+module content and student comprehension by providing
+personalized and automated support. The use of this tool
+can extend to various engineering courses with substantial
+content loads and to modules where students frequently require
+clariﬁcation on complex topics.
+F
+UTURE WORK
+There are ample opportunities for reﬁning and enhancing
+the functionality of “Q-Module-Bot” based on user feed-
+back. The initial user studies shed light on technical glitches
+within existing systems, highlighted by 60% of academics,
+reinforcing the need for robust and dependable technological
+solutions. This underscores the importance of comprehensive
+testing to ensure reliability and mitigate any potential points
+of failure before considering implementation in university
+systems. Additionally, several avenues for future enhance-
+ments are evident, addressing existing shortcomings and
+catering to speciﬁc needs, including the addition of training
+materials to the knowledge base. One promising enhancement
+involves enabling the system to handle more intricate question
+types that revolve around technical problem-solving, integrat-
+ing the system into assessment scenarios holds signiﬁcant
+potential, extending its utility beyond its current scope [36].
+Furthermore, work could be done to only include text chunks
+in the response formulation if over a speciﬁc “relatedness”
+threshold (e.g., if over 80% conﬁdence).
+A. Advanced Generative AI Models
+The long term objective is that Q-Module-Bot will be
+updated regularly with the latest Generative AI models
+to improve the performance in terms of accuracy of the
+responses generated, which will be validated using precision
+and recall [38].
+B. Experiments With Larger Sample Size
+The true potential of the system will become clear when
+it is used as an integral part of university module teach-
+ing throughout an academic term. Beyond its immediate
+beneﬁts as a Q&A system, an exciting prospect emerges—
+leveraging the wealth of data it generates for deeper insights.
+By analyzing this data, we can not only identify areas of
+content that students ﬁnd most challenging but also gain
+a nuanced understanding of their engagement levels [26].
+This data-driven approach serves as a valuable metric for the
+overall health of modules and ultimately academic institutions,
+offering actionable insights to inform decision-making and
+targeted teaching service interventions. These insights could
+empower educators and administrators to proactively address
+issues, reﬁne teaching strategies, and optimize the learning
+experience. The journey ahead holds transformative possibil-
+ities for educational technology. By embracing analytics and
+using the system as a catalyst for meaningful change, we pave
+the way for a future where education is continually enhanced
+through innovative solutions and evidence-based approaches.
+In terms of the service evaluation, a limitation we encoun-
+tered was related to the small sample size of the stakeholders
+involved. To address this issue, we intend to employ interpreta-
+tive research inquiry in the form of semi-structured interviews
+with the stakeholders [37]. By doing so, we aim to explore
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+ALLEN et al.: Q-Module-Bot: A GENERATIVE AI-BASED QUESTION AND ANSWER BOT 801
+their detailed feedback on the affordances, which will allow
+us to gain a deeper understanding of their experience and
+observations. Furthermore, this approach will enable us to
+identify areas that require improvement, particularly with
+regard to Q-Module-Bot’s architecture, data handling, and
+integration processes.
+In addition to semi-structured interviews, our objective
+is to conduct an extensive experiments of Q-Module-Bot
+using a larger sample of university students. The purpose
+of this experiments will be to evaluate the effectiveness and
+usability of Q-Module-Bot in answering questions related to
+the module content compared to traditional methods, such as
+asking module teaching staff or searching manually through
+the VLE. For this evaluation, we aim to recruit around
+100 students enrolled on a module where Q-Module-bot will
+be trained. The students will be randomly assigned into a
+control and experimental group. For the control group, the
+students will use traditional methods (such as VLE or module
+teaching team) to ﬁnd answers to their questions. While the
+experimental group, will use the Q-Module-Bot to ﬁnd their
+answers. The experiment will be conducted over a 12 week
+period (1 term), which will be followed a usability survey
+that will need to be completed by both groups to evaluate the
+perceived ease of use, satisfaction and effectiveness.
+C. Data Privacy and Ethics
+We anticipate that this research and future experiments will
+enhance the overall performance of the service and improve
+the user experience. On the whole, the current limitations
+of the “Q-Module-Bot” have the potential to be addressed
+through ﬁne-tuning without necessitating extensive retraining.
+As we progress, it is imperative to consider ethical concerns
+that arise regarding data privacy, such as issues surrounding
+access, to data and its potential misuse, which must be
+communicated transparently to end-users. Upon overcom-
+ing the system’s current limitations and ethical concerns,
+there is an opportunity to extend its scope by implementing
+“Q-Module-Bot” within courses and modules across various
+disciplines in the institution. This would serve as a catalyst for
+conducting longitudinal studies to evaluate the impact of this
+tool on educational outcomes over a more extended period.
+Such an investigation will contribute to a more nuanced under-
+standing of the long-term beneﬁts of incorporating AI-powered
+assistants in education.
+S
+OFTW ARE AV AILABILITY
+We released Q-Module-Bot as an open source soft-
+ware and the implementation code with experiment scripts
+and results can be found at the GitHub repository:
+https://github.com/iamssgill/Q-Module-Bot
+R
+EFERENCES
+[1] S. S. Gill, U. Naeem, S. Fuller, Y . Chen, and S. Uhlig, “How Covid-19
+changed computer science education,” Itnow, vol. 64, no. 2, pp. 60–61,
+Jun. 2022.
+[2] S. S. Gill et al., “Transformative effects of ChatGPT on modern
+education: Emerging Era of AI Chatbots,” Internet Things Cyber-Phys.
+Syst., vol. 4, pp. 19–23, Jan. 2024.
+[3] B. R. Ranoliya, N. Raghuwanshi, and S. Singh, “Chatbot for university
+related FAQs,” in Proc. Int. Conf. Adv. Comput., Commun. Informat.
+(ICACCI), 2017, pp. 1525–1530.
+[4] S. Cunningham-Nelson, W. Boles, L. Trouton, and E. Margerison, “A
+review of chatbots in education: Practical steps forward,” in Proc. 30th
+Annu. Conf. Australas. Assoc. Eng. Educ. (AAEE) Educ. Becoming
+Agents Change Innov., Integr., Motiv., 2019, pp. 299–306.
+[5] V . P. Dennen, A. A. Darabi, and L. J. Smith, “Instructor-learner
+interaction in online courses: The relative perceived importance of
+particular instructor actions on performance and satisfaction,” Distance
+Educ., vol. 28, no. 1, pp. 65–79, 2007.
+[6] K. Swan, “Learning effectiveness: What the research tells us,” in
+Elements of Quality Online Education: Practice and Direction, J. Bourne
+and J. C. Moore, Eds., Needham, MA, USA: Sloan Consortium, 2003,
+pp. 13–45.
+[7] K. El azhari, I. Hilal, N. Daoudi, and R. Ajhoun, “Smart learning using
+autonomous Chatbot based on NLP techniques,” in Proc. Int. Conf. Artif.
+Intell. Smart Environ., 2022, pp. 723–728.
+[8] D. Feng, E. Shaw, J. Kim, and E. Hovy, “An intelligent discussion-bot
+for answering student queries in threaded discussions,” in Proc. 11th
+Int. Conf. Intell. User Interfaces , 2006, pp. 171–177.
+[9] D. Kaczorowska-Spychalska, “How chatbots inﬂuence
+marketing,” Management, vol. 23, no. 1, pp. 251–270, 2019.
+[10] L. Benotti, M. C. Martnez, and F. Schapachnik, “A tool for introducing
+computer science with automatic formative assessment,” IEEE Trans.
+Learn. Technol., vol. 11, no. 2, pp. 179–192, Apr.–Jun. 2018.
+[11] C. W. Okonkwo and A. Ade-Ibijola, “Chatbots applications in education:
+A systematic review,” Comput. Educ. Artif. Intell. , vol. 2, Jan. 2021,
+Art. no. 100033.
+[12] S. S. Gill and R. Buyya, “Transforming research with quantum
+computing,” J. Econ. Technol., vol. 2, pp. 1–8, Jul. 2024.
+[13] P. L. Rogers, “Barriers to adopting emerging technologies in educa-
+tion,” J. Educ. Comput. Res. , vol. 22, no. 4, pp. 455–472, 2000.
+[14] A. Schmulian and S. A. Coetzee, “The development of messenger bots
+for teaching and learning and accounting students’ experience of the use
+thereof,” Brit. J. Educ. Technol. , vol. 50, no. 6, pp. 2751–2777, 2019.
+[15] J. L. Shackelford and M. Maxwell, “Contribution of learner–instructor
+interaction to sense of community in graduate online education,” J.
+Online Learn. Teach., vol. 8, no. 4, pp. 248–260, 2012.
+[16] S. Sinha, S. Basak, Y . Dey, and A. Mondal, “An educational chatbot
+for answering queries,” in Proc. Emerg. Technol. Model. Graph. (IEM) ,
+2020, pp. 55–60.
+[17] D. W. Surry, D. C. Ensminger, and M. Haab, “A model for integrating
+instructional technology into higher education,” Brit. J. Educ. Technol. ,
+vol. 36, no. 2, pp. 327–329, 2005.
+[18] S. Yang and K. Stansﬁeld, “AI chatbot for educational service improve-
+ment in the post-pandemic era: A case study prototype for supporting
+digital reading list,” in Proc. 13th Int. Conf. E-Educ., E-Bus., E-Manag.,
+E- Learn. (IC4E) , 2022, pp. 24–29.
+[19] D. Mhlanga, “Open AI in education, the responsible and ethi-
+cal use of ChatGPT towards lifelong learning,” in FinTech and
+Artiﬁcial Intelligence for Sustainable Development: The Role of Smart
+Technologies in Achieving Development Goals . Cham: Switzerland,
+Springer Nat., 2023, pp. 387–409.
+[20] K. Hu, (Reuters News Agency Co., London, U.K.). ChatGPT
+Sets Record for Fastest-Growing User Base: Analyst Note . (2023).
+[Online]. Available: https://www.reuters.com/technology/chatgpt-sets-
+record-fastest-growing-user-base-analyst-note-2023-02-01/
+[21] D. A. Abrahams, “Technology adoption in higher education: A frame-
+work for identifying and prioritising issues and barriers to adoption of
+instructional technology,” J. Appl. Res. Higher Educ. , vol. 2, pp. 34–49,
+Dec. 2010.
+[22] P. Brandsetter and S. Schmutz, “Conversational AI for corporate
+e-learning,” in Proc. 21st Int. Conf. Inf. Integr. Web- Based Appl.
+Services (iiWAS), 2019, pp. 674–678.
+[23] S. S. Gill and R. Kaur, “ChatGPT: Vision and challenges,” Internet
+Things Cyber-Phys. Syst. , vol. 3, pp. 262–271, Jan. 2023.
+[24] A. ElSayary, “An investigation of teachers’ perceptions of using
+ChatGPT as a supporting tool for teaching and learning in the digital
+era,” J. Comput. Assist. Learn. , vol. 40, no. 3, pp. 931–945, 2024.
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 
+802 IEEE TRANSACTIONS ON EDUCATION, VOL. 67, NO. 5, OCTOBER 2024
+[25] M. Morsy, A. Farraj, and D. Reavis, “On the challenges and opportuni-
+ties of using ChatGPT in academia,” in Proc. IEEE Front. Educ. Conf.
+(FIE), 2023, pp. 1–6,
+[26] S. S. Gill, U. Naeem, R. Kaur, S. Fuller, A. Tombros, and S. Uhlig,
+“Enhancing student learning, engagement, and employment through
+inclusive curriculum design,” in Engaging Higher Education Teachers
+and Students With Transnational Leadership . Hershey, PA, USA: IGI
+Global, 2024, pp. 103–126.
+[27] D. Wiryawan, Z. R. Akbar, S. E. Hiererra, D. Luhukay, Richard,
+and A. A. Pitchay, “Analysis of factors inﬂuencing the use of the
+online learning management system after Covid-19 with the D&M
+model,” in Proc. 6th Int. Conf. Inf. Commun. Technol. (ICOIACT), 2023,
+pp. 138–142.
+[28] G. I. Putri, N. Nuryadin, R. E. Indrajit, E. Dazki, and H. Santoso,
+“Analysis of teacher and student responses to the use of a Web-based
+learning management system (LMS) during COVID-19 pandemic,” in
+Proc. 6th Int. Conf. Inf. Comput. (ICIC) , 2021, pp. 1–5.
+[29] U. Naeem, L. Bosman, and S. S. Gill, “Teaching and facilitating an
+online learning environment for a Web programming module,” in Proc.
+IEEE Glob. Eng. Educ. Conf. (EDUCON) , 2022, pp. 769–774.
+[30] F. R. Shahroury, L. Al-Tarawneh, and A. Al-Zoubi, “In-the-online-class
+remote lab in post COVID-19 pandemic,” in Proc. IEEE Glob. Eng.
+Educ. Conf. (EDUCON) , 2022, pp. 677–682.
+[31] J. Qadir, “Engineering education in the era of ChatGPT: Promise and
+pitfalls of generative ai for education,” in Proc. IEEE Glob. Eng. Educ.
+Conf. (EDUCON), 2023, pp. 1–9.
+[32] T. K. F. Chiu, H. Meng, C.-S. Chai, I. King, S. Wong, and
+Y . Yam, “Creation and evaluation of a pretertiary artiﬁcial intelli-
+gence (AI) curriculum,” IEEE Trans. Educ. , vol. 65, no. 1, pp. 30–39,
+Feb. 2021.
+[33] R.-E. Precup, E.-L. Hedrea, R.-C. Roman, E. M. Petriu, A.-I. Szedlak-
+Stinean, and C.-A. Bojan-Dragos, “Experiment-based approach to teach
+optimization techniques„” IEEE Trans. Educ., vol. 64, no. 2, pp. 88–94,
+May 2021.
+[34] S. Chenoweth and P. K. Linos, “Teaching machine learning as part
+of agile software engineering,” IEEE Trans. Educ. , vol. 67, no. 3,
+pp. 377–386, Jun. 2024.
+[35] R. Serra, C. Martinez, C. J. C. Vertegaal, P. Sundaramoorthy,
+and M. J. Bentum, “Using student-led tutorials to improve student
+performance in challenging courses,” IEEE Trans. Educ., vol. 66, no. 4,
+pp. 339–349, Aug. 2023.
+[36] M. Mandanici and S. Spagnol, “Integrating computational thinking with
+the curriculum of future professional musicians,” IEEE Trans. Educ. ,
+early access, Oct. 11, 2023, doi: 10.1109/TE.2023.3313394.
+[37] J. Wei-Kocsis, M. Sabounchi, G. J. Mendis, P. Fernando, B.
+Yang, and T. Zhang, “Cybersecurity education in the age of
+artiﬁcial intelligence: A novel proactive and collaborative learn-
+ing paradigm,” IEEE Trans. Educ. , vol. 67, no. 3, pp. 395–404,
+Jun. 2024.
+[38] D. Wang and G. Chen, “Making AI accessible for STEM teachers: Using
+explainable AI for unpacking classroom discourse analysis,”IEEE Trans.
+Educ., early access, Jul. 19, 2024, doi: 10.1109/TE.2024.3421606.
+Authorized licensed use limited to: Pune Institute of Computer Technology. Downloaded on November 29,2025 at 09:38:34 UTC from IEEE Xplore.  Restrictions apply. 

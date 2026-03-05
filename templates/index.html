@@ -1,27 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Research Paper Q&A</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Module-Bot | AI Teaching Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <h2>Ask a question</h2>
+<body data-role="{{ role }}">
 
-    <form method="POST">
-        <input type="text" name="question" size="80" required>
-        <br><br>
-        <button type="submit">Ask</button>
-    </form>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2 class="logo">Q-Module-Bot</h2>
+        
+        <div class="role-selector">
+            <label>Login As:</label>
+            <select id="roleSelect" onchange="changeRole()">
+                <option value="student" {% if role == 'student' %}selected{% endif %}>Student</option>
+                <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>Teacher / Professor</option>
+            </select>
+        </div>
 
-    {% if answer %}
-        <h3>Answer</h3>
-        <p>{{ answer }}</p>
+        <div class="menu">
+            <button class="nav-btn active" onclick="switchTab('chat')">💬 Chat & Ask</button>
+            <button class="nav-btn teacher-only" onclick="switchTab('knowledge')">📚 Knowledge Base</button>
+        </div>
 
-        <h3>Sources</h3>
-        {% for chunk, score in sources %}
-            <p><b>Relatedness:</b> {{ score }}%</p>
-            <p>{{ chunk }}</p>
-            <hr>
-        {% endfor %}
-    {% endif %}
+        <div class="ingestion-tools">
+            <h4>Add Context</h4>
+            <div class="input-group">
+                <input type="text" id="scrapeUrl" placeholder="Enter URL to scrape">
+                <button onclick="scrapeUrl()">Scrape</button>
+            </div>
+            
+            <div class="input-group" style="margin-top: 10px;">
+                <input type="file" id="uploadDoc" accept=".pdf,.txt" style="font-size: 11px; padding: 5px; cursor: pointer;">
+                <button onclick="uploadDocument()">Upload</button>
+            </div>
+            <p id="scrapeStatus" class="status-msg"></p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- Tab 1: Chat -->
+        <div id="chatTab" class="tab-content active">
+            <div class="chat-container">
+                <div id="chatHistory" class="chat-history">
+                    <div class="message assistant">
+                        <div class="bubble">
+                            <p>Hello! I am your AI teaching assistant. How can I help you with your module learning today?</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <input type="text" id="chatInput" placeholder="Ask a question about the module..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Knowledge Base (Teacher Only) -->
+        <div id="knowledgeTab" class="tab-content teacher-only">
+            <div class="dashboard-header">
+                <h2>Knowledge Base Editor</h2>
+                <p>Human-in-the-loop: Edit or remove text chunks to heal the AI's responses.</p>
+                <button onclick="loadKnowledgeBase()">🔄 Refresh Chunks</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="kbTable">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Author</th>
+                            <th>Text Chunk</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kbBody">
+                        <!-- Loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

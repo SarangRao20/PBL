@@ -18,4 +18,26 @@ process carried out :
 
 	we firstly import the pypdf library
 
+	then we made the chunking of the pdf text and then made the embedding of the text and stored it in the 
+	embedding folder as a csv
+
+	What Phase 4 does (conceptually)
+
+Load stored embeddings (CSV)
+
+Convert embeddings from text → vectors
+
+Embed the user query (same model!)
+
+Compute cosine similarity
+
+Rank chunks
+
+Produce a relatedness score (%)
+
+This is exactly what the paper describes as spatial distance–based ranking.
+
+
+
+
 	
