@@ -195,17 +195,34 @@ function appendMessage(role, text, idOverride = null, sources = [], msgId = null
         // Render Mermaid Diagrams
         const mermaidDivs = bubble.querySelectorAll('.language-mermaid');
         mermaidDivs.forEach((div, index) => {
-            const chartConfig = div.textContent;
+            const chartConfig = div.textContent.trim();
             const containerId = `mermaid-${Date.now()}-${index}`;
             const container = document.createElement('div');
             container.id = containerId;
             container.className = 'mermaid-container';
-            container.style.marginTop = '1rem';
+            
+            // Add a subtle loading state
+            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #888;"><i data-lucide="loader" style="width: 24px; height: 24px; animation: spin 1s linear infinite;"></i></div>';
             div.parentNode.replaceChild(container, div);
 
-            mermaid.render(containerId + '-svg', chartConfig).then(({ svg }) => {
-                container.innerHTML = svg;
-            });
+            // Render with error handling
+            mermaid.render(containerId + '-svg', chartConfig)
+                .then(({ svg }) => {
+                    container.innerHTML = svg;
+                    // Reinitialize lucide icons if any in SVG foreignObjects
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Mermaid rendering error:', error);
+                    container.innerHTML = `
+                        <div style="padding: 1.5rem; background: rgba(255, 100, 100, 0.1); border: 1px solid rgba(255, 100, 100, 0.3); border-radius: 8px; color: #ff6b6b;">
+                            <strong>Diagram Rendering Error</strong>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">Could not render the diagram. The syntax may need adjustment.</p>
+                        </div>
+                    `;
+                });
         });
 
         if (sources && sources.length > 0) {
@@ -241,7 +258,170 @@ function appendMessage(role, text, idOverride = null, sources = [], msgId = null
             lucide.createIcons();
         }
 
+        // Add TTS button for assistant responses
+        const ttsBtn = document.createElement('button');
+        ttsBtn.className = 'tts-btn';
+        ttsBtn.innerHTML = '<i data-lucide="volume-2" style="width:14px;height:14px;"></i> Listen';
+        ttsBtn.onclick = () => speakText(text);
+        bubble.appendChild(ttsBtn);
+        lucide.createIcons();
+
         // Self-Correcting Loop (Teacher Only)
+// Text-to-Speech functionality
+let currentSpeech = null;
+
+function speakText(text) {
+    // Stop any ongoing speech
+    if (currentSpeech) {
+        window.speechSynthesis.cancel();
+        currentSpeech = null;
+        return;
+    }
+
+    // Check browser support
+    if (!('speechSynthesis' in window)) {
+        alert('Text-to-speech is not supported in your browser.');
+        return;
+    }
+
+    // Remove markdown formatting for better speech
+    const cleanText = text
+        .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+        .replace(/`([^`]+)`/g, '$1')     // Remove inline code
+        .replace(/[*_~#]/g, '')          // Remove markdown symbols
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Convert links to text
+
+    currentSpeech = new SpeechSynthesisUtterance(cleanText);
+    currentSpeech.rate = 0.9;
+    currentSpeech.pitch = 1.0;
+    currentSpeech.volume = 1.0;
+
+    currentSpeech.onend = () => {
+        currentSpeech = null;
+    };
+
+    window.speechSynthesis.speak(currentSpeech);
+}
+
+// User document upload functions (for all users)
+async function userScrapeUrl() {
+    const urlInput = document.getElementById('userScrapeUrl');
+    const statusMsg = document.getElementById('userScrapeStatus');
+
+    if (!urlInput.value) {
+        statusMsg.innerText = "Please enter a URL";
+        statusMsg.style.color = "#f85149";
+        return;
+    }
+
+    statusMsg.innerText = "Starting to fetch and index the URL...";
+    statusMsg.style.color = "#e3b341";
+
+    try {
+        const res = await fetch('/scrape', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlInput.value })
+        });
+        const data = await res.json();
+
+        if (data.success && data.job_id) {
+            pollUserJob(data.job_id, urlInput);
+        } else {
+            statusMsg.innerText = data.error || "Failed to start scraping";
+            statusMsg.style.color = "#f85149";
+        }
+    } catch (err) {
+        statusMsg.innerText = "Network error";
+        statusMsg.style.color = "#f85149";
+    }
+}
+
+async function userUploadDocument() {
+    const fileInput = document.getElementById('userUploadDoc');
+    const statusMsg = document.getElementById('userScrapeStatus');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        statusMsg.innerText = "Please select a file";
+        statusMsg.style.color = "#f85149";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('document', fileInput.files[0]);
+
+    statusMsg.innerText = "Uploading and processing document...";
+    statusMsg.style.color = "#e3b341";
+
+    try {
+        const res = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success && data.job_id) {
+            pollUserJob(data.job_id, fileInput);
+        } else {
+            statusMsg.innerText = data.error || "Upload failed";
+            statusMsg.style.color = "#f85149";
+        }
+    } catch (err) {
+        statusMsg.innerText = "Network error during upload";
+        statusMsg.style.color = "#f85149";
+    }
+}
+
+async function pollUserJob(jobId, inputEl) {
+    const statusMsg = document.getElementById('userScrapeStatus');
+    const progContainer = document.getElementById('userProgressContainer');
+    const progBar = document.getElementById('userProgressBar');
+    const progText = document.getElementById('userProgressText');
+
+    progContainer.style.display = 'block';
+
+    const interval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/job/${jobId}`);
+            const data = await res.json();
+
+            if (data.error) {
+                clearInterval(interval);
+                statusMsg.innerText = "Error tracking job";
+                statusMsg.style.color = "#f85149";
+                progContainer.style.display = 'none';
+                return;
+            }
+
+            progBar.style.width = `${data.progress}%`;
+            progText.innerText = data.message || `Processing... ${data.progress}%`;
+            statusMsg.innerText = `Processing... ${data.progress}%`;
+            statusMsg.style.color = "#e3b341";
+
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                statusMsg.innerText = "✓ Successfully added to your knowledge base!";
+                statusMsg.style.color = "#73daca";
+                setTimeout(() => { 
+                    progContainer.style.display = 'none'; 
+                    statusMsg.innerText = "";
+                }, 3000);
+                if (inputEl) {
+                    if (inputEl.value !== undefined) inputEl.value = "";
+                    if (inputEl.files) inputEl.value = null;
+                }
+            } else if (data.status === 'failed') {
+                clearInterval(interval);
+                statusMsg.innerText = "✗ Processing failed: " + data.message;
+                statusMsg.style.color = "#f85149";
+                progContainer.style.display = 'none';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, 1000);
+}
+
         if (msgId && text !== '...' && document.body.getAttribute('data-role') === 'teacher') {
             const controls = document.createElement('div');
             controls.className = "feedback-controls";

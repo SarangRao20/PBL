@@ -69,14 +69,44 @@ def login():
 
         # Dummy Auth Logic
         if username == "professor" and password == "admin":
-            session["user_id"] = str(uuid.uuid4())
-            session["role"] = "teacher"
-            session["author"] = "Professor " + username.capitalize()
+            user_id = str(uuid.uuid4())
+            user_role = "teacher"
+            author = "Professor " + username.capitalize()
+            
+            # Store in Flask session
+            session["user_id"] = user_id
+            session["role"] = user_role
+            session["author"] = author
+            
+            # Store in database sessions table
+            conn = get_db_connection()
+            conn.execute(
+                "INSERT OR REPLACE INTO sessions (session_id, role, author) VALUES (?, ?, ?)",
+                (user_id, user_role, author)
+            )
+            conn.commit()
+            conn.close()
+            
             return redirect(url_for("index"))
         elif username == "student" and password == "student":
-            session["user_id"] = str(uuid.uuid4())
-            session["role"] = "student"
-            session["author"] = "Student " + username.capitalize()
+            user_id = str(uuid.uuid4())
+            user_role = "student"
+            author = "Student " + username.capitalize()
+            
+            # Store in Flask session
+            session["user_id"] = user_id
+            session["role"] = user_role
+            session["author"] = author
+            
+            # Store in database sessions table
+            conn = get_db_connection()
+            conn.execute(
+                "INSERT OR REPLACE INTO sessions (session_id, role, author) VALUES (?, ?, ?)",
+                (user_id, user_role, author)
+            )
+            conn.commit()
+            conn.close()
+            
             return redirect(url_for("index"))
         else:
             return render_template("login.html", error="Invalid credentials. Use professor/admin or student/student.")
@@ -104,6 +134,14 @@ def chat():
 
     conn = get_db_connection()
     
+    # Ensure session exists in database
+    if user_id:
+        conn.execute(
+            "INSERT OR IGNORE INTO sessions (session_id, role, author) VALUES (?, ?, ?)",
+            (user_id, role, author)
+        )
+        conn.commit()
+    
     try:
         # 1. Fetch negative RLHF constraints
         cursor = conn.cursor()
@@ -122,18 +160,48 @@ def chat():
         top_chunks = retrieve_top_chunks(query_vec, role_filter=role, author_filter=author)
         
         # AUTONOMOUS SEARCH FALLBACK: If best match < 50% similar, search the web!
+        search_triggered = False
         if not top_chunks or float(top_chunks[0][0]) < 0.50:
             print("Low confidence! Triggering autonomous web search...")
             if autonomous_web_search(question, role=role, author=author):
                 # We found new things online, retrieve again!
+                query_vec = embed_query(question)  # Re-embed to ensure fresh vector
                 top_chunks = retrieve_top_chunks(query_vec, role_filter=role, author_filter=author)
+                search_triggered = True
                 
         chunks_text = [t for sim, t in top_chunks]
         sources = [{"text": t, "score": round(float(sim)*100, 2)} for sim, t in top_chunks]
         
-        # 4. Generate Answer
+        # 4. Generate Answer with retry logic
         prompt = build_prompt(question, chunks_text, negative_constraints=constraints_str)
-        answer = call_llm(prompt)
+        answer = None
+        
+        try:
+            answer = call_llm(prompt)
+        except Exception as llm_error:
+            print(f"LLM call failed: {llm_error}")
+            
+            # If LLM fails and we haven't searched yet, try autonomous search
+            if not search_triggered:
+                print("LLM failed, triggering autonomous web search as fallback...")
+                if autonomous_web_search(question, role=role, author=author):
+                    # Retrieved new data, try LLM again
+                    query_vec = embed_query(question)
+                    top_chunks = retrieve_top_chunks(query_vec, role_filter=role, author_filter=author)
+                    chunks_text = [t for sim, t in top_chunks]
+                    sources = [{"text": t, "score": round(float(sim)*100, 2)} for sim, t in top_chunks]
+                    prompt = build_prompt(question, chunks_text, negative_constraints=constraints_str)
+                    
+                    try:
+                        answer = call_llm(prompt)
+                    except Exception as retry_error:
+                        print(f"LLM retry failed: {retry_error}")
+                        answer = "I apologize, but I'm experiencing connectivity issues with the AI service. The system attempted to search the web for relevant information, but I'm unable to generate a response at this time. Please try again in a moment."
+                else:
+                    answer = "I couldn't find relevant information in the knowledge base, and the web search also failed. Could you rephrase your question or provide more context?"
+            else:
+                # Already searched, just return error message
+                answer = "I found some information but I'm experiencing connectivity issues with the AI service. Please try again in a moment."
         
         # 5. Save Interaction
         cursor.execute("INSERT INTO messages (session_id, role, content) VALUES (?, 'user', ?)", (user_id, question))
@@ -145,7 +213,17 @@ def chat():
         
     except Exception as e:
         print(f"Chat error: {e}")
-        return jsonify({"error": str(e)}), 500
+        # Try one last autonomous search before giving up
+        try:
+            if autonomous_web_search(question, role=role, author=author):
+                return jsonify({
+                    "answer": "I've gathered some information from the web about your question. Please ask again to see the results.",
+                    "sources": [],
+                    "message_id": None
+                })
+        except:
+            pass
+        return jsonify({"error": f"An error occurred while processing your question. Please try again. Details: {str(e)}"}), 500
     finally:
         conn.close()
 
@@ -175,7 +253,7 @@ def feedback():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/job/<job_id>", methods=["GET"])
-@teacher_required
+@login_required
 def get_job_status(job_id):
     job = INGESTION_JOBS.get(job_id)
     if not job:
@@ -199,9 +277,9 @@ def run_scrape_job(job_id, url, role, author):
         INGESTION_JOBS[job_id]["message"] = str(e)
 
 @app.route("/scrape", methods=["POST"])
-@teacher_required
+@login_required
 def scrape():
-    """Web scraping API"""
+    """Web scraping API - available to all users"""
     data = request.json
     url = data.get("url")
     if not url:
@@ -220,9 +298,9 @@ def scrape():
     return jsonify({"success": True, "job_id": job_id, "message": "Scraping started in background."})
 
 @app.route("/upload", methods=["POST"])
-@teacher_required
+@login_required
 def upload_file():
-    """Document upload API"""
+    """Document upload API - available to all users"""
     if 'document' not in request.files:
         return jsonify({"error": "No document part"}), 400
         
@@ -329,18 +407,120 @@ def get_analytics():
     kb_composition = {row[0]: row[1] for row in cursor.fetchall()}
     
     # 2. Activity Trends (Last 7 days)
-    cursor.execute("SELECT date(timestamp), COUNT(*) FROM messages WHERE role='user' GROUP BY date(timestamp) LIMIT 7")
+    cursor.execute("SELECT date(timestamp), COUNT(*) FROM messages WHERE role='user' GROUP BY date(timestamp) ORDER BY date(timestamp) DESC LIMIT 7")
     activity = {row[0]: row[1] for row in cursor.fetchall()}
     
     # 3. Top cited authors
     cursor.execute("SELECT author, COUNT(*) FROM knowledge_base GROUP BY author ORDER BY COUNT(*) DESC LIMIT 5")
     top_authors = {row[0]: row[1] for row in cursor.fetchall()}
     
+    # 4. Session statistics
+    cursor.execute("SELECT COUNT(*) FROM sessions")
+    total_sessions = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT role, COUNT(*) FROM sessions GROUP BY role")
+    sessions_by_role = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    # 5. Total messages
+    cursor.execute("SELECT COUNT(*) FROM messages")
+    total_messages = cursor.fetchone()[0]
+    
     conn.close()
     return jsonify({
         "kb_composition": kb_composition,
         "activity": activity,
-        "top_authors": top_authors
+        "top_authors": top_authors,
+        "total_sessions": total_sessions,
+        "sessions_by_role": sessions_by_role,
+        "total_messages": total_messages
+    })
+
+@app.route("/api/sessions", methods=["GET"])
+@login_required
+def get_sessions():
+    """Get all sessions (teachers see all, students see only their own)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    role = session.get("role")
+    user_id = session.get("user_id")
+    
+    if role == "teacher":
+        # Teachers can see all sessions
+        cursor.execute("""
+            SELECT s.session_id, s.role, s.author, s.created_at,
+                   COUNT(m.id) as message_count
+            FROM sessions s
+            LEFT JOIN messages m ON s.session_id = m.session_id
+            GROUP BY s.session_id
+            ORDER BY s.created_at DESC
+        """)
+    else:
+        # Students see only their own session
+        cursor.execute("""
+            SELECT s.session_id, s.role, s.author, s.created_at,
+                   COUNT(m.id) as message_count
+            FROM sessions s
+            LEFT JOIN messages m ON s.session_id = m.session_id
+            WHERE s.session_id = ?
+            GROUP BY s.session_id
+            ORDER BY s.created_at DESC
+        """, (user_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    sessions_list = [{
+        "session_id": r[0],
+        "role": r[1],
+        "author": r[2],
+        "created_at": r[3],
+        "message_count": r[4]
+    } for r in rows]
+    
+    return jsonify({"sessions": sessions_list})
+
+@app.route("/api/sessions/<session_id>/messages", methods=["GET"])
+@login_required
+def get_session_messages(session_id):
+    """Get chat history for a specific session"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Verify access: teachers can see all, students only their own
+    role = session.get("role")
+    user_id = session.get("user_id")
+    
+    if role != "teacher" and session_id != user_id:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    cursor.execute("""
+        SELECT id, role, content, timestamp
+        FROM messages
+        WHERE session_id = ?
+        ORDER BY timestamp ASC
+    """, (session_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    messages = [{
+        "id": r[0],
+        "role": r[1],
+        "content": r[2],
+        "timestamp": r[3]
+    } for r in rows]
+    
+    return jsonify({"messages": messages})
+
+@app.route("/api/current_session", methods=["GET"])
+@login_required
+def get_current_session():
+    """Get current session information"""
+    return jsonify({
+        "session_id": session.get("user_id"),
+        "role": session.get("role"),
+        "author": session.get("author")
     })
 
 if __name__ == "__main__":

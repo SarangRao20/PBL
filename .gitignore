@@ -2,3 +2,5 @@
 /.env
 .env
 data/chat_history.db
+/pycache
+*.pyc

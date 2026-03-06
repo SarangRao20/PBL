@@ -10,7 +10,68 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#4a90e2',
+                primaryTextColor: '#e0e0e0',
+                primaryBorderColor: '#5a9fd4',
+                lineColor: '#7ea6d8',
+                secondaryColor: '#2d4a6e',
+                tertiaryColor: '#1e2a3a',
+                background: '#1a1a1a',
+                mainBkg: '#2a2a2a',
+                secondBkg: '#1e1e1e',
+                mainContrastColor: '#f0f0f0',
+                darkMode: true,
+                fontSize: '16px',
+                fontFamily: 'Inter, system-ui, sans-serif'
+            },
+            flowchart: {
+                curve: 'basis',
+                padding: 20,
+                nodeSpacing: 80,
+                rankSpacing: 80,
+                diagramPadding: 20,
+                useMaxWidth: true,
+                htmlLabels: true
+            },
+            sequence: {
+                diagramMarginX: 30,
+                diagramMarginY: 20,
+                actorMargin: 80,
+                width: 180,
+                height: 65,
+                boxMargin: 15,
+                boxTextMargin: 8,
+                noteMargin: 15,
+                messageMargin: 45,
+                mirrorActors: true,
+                useMaxWidth: true
+            },
+            gantt: {
+                titleTopMargin: 25,
+                barHeight: 25,
+                barGap: 8,
+                topPadding: 75,
+                leftPadding: 120,
+                gridLineStartPadding: 40,
+                fontSize: 14,
+                sectionFontSize: 14,
+                numberSectionStyles: 4,
+                useMaxWidth: true
+            },
+            class: {
+                useMaxWidth: true
+            },
+            state: {
+                useMaxWidth: true
+            },
+            journey: {
+                useMaxWidth: true
+            }
+        });
     </script>
 </head>
 <body data-role="{{ role }}">
@@ -23,6 +84,9 @@
             <button class="nav-btn active" onclick="switchTab('chat')">
                 <i data-lucide="message-square"></i> Chat
             </button>
+            <button class="nav-btn" onclick="switchTab('mydata')">
+                <i data-lucide="upload"></i> My Documents
+            </button>
             <button class="nav-btn teacher-only" onclick="switchTab('knowledge')">
                 <i data-lucide="database"></i> Knowledge Base
             </button>
@@ -31,29 +95,6 @@
             </button>
         </div>
 
-        <div class="ingestion-tools teacher-only" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
-            <p style="font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 1rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.1em;">Data Ingestion</p>
-            
-            <div class="input-block">
-                <input type="text" id="scrapeUrl" placeholder="URL to index">
-                <button onclick="scrapeUrl()" class="ingest-btn">Index URL</button>
-            </div>
-            
-            <div class="input-block">
-                <div class="file-input-wrapper">
-                    <input type="file" id="uploadDoc" accept=".pdf,.txt">
-                </div>
-                <button onclick="uploadDocument()" class="ingest-btn">Upload File</button>
-            </div>
-            
-            <p id="scrapeStatus" class="status-msg" style="margin-top: 0.5rem; font-size: 0.7rem;"></p>
-            
-            <div id="progressContainer" style="display: none; margin-top: 0.5rem;">
-                <div class="progress-bar-bg">
-                    <div id="progressBar" class="progress-bar-fill"></div>
-                </div>
-            </div>
-        </div>
 
         <div class="sidebar-footer" style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
             <button class="nav-btn" onclick="window.location.href='/logout'" style="margin-bottom: 0;">
@@ -80,6 +121,47 @@
                 <div class="input-container">
                     <input type="text" id="chatInput" placeholder="Enter research query..." onkeypress="handleKeyPress(event)">
                     <button class="send-btn" onclick="sendMessage()">Analyze</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: My Documents (All Users) -->
+        <div id="mydataTab" class="tab-content">
+            <div class="dashboard-header">
+                <h2>My Documents & Links</h2>
+                <p>Upload your own materials - only you can see these in your search results.</p>
+            </div>
+            
+            <div style="max-width: 600px; margin: 2rem auto;">
+                <div class="input-block" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        <i data-lucide="link" style="width: 14px; height: 14px;"></i> Add URL
+                    </label>
+                    <input type="text" id="userScrapeUrl" placeholder="https://example.com/article" style="width: 100%; margin-bottom: 0.5rem;">
+                    <button onclick="userScrapeUrl()" class="send-btn" style="width: 100%;">
+                        <i data-lucide="download"></i> Index URL
+                    </button>
+                </div>
+                
+                <div class="input-block">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> Upload Document
+                    </label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="userUploadDoc" accept=".pdf,.txt" style="width: 100%; margin-bottom: 0.5rem;">
+                    </div>
+                    <button onclick="userUploadDocument()" class="send-btn" style="width: 100%;">
+                        <i data-lucide="upload"></i> Upload File
+                    </button>
+                </div>
+                
+                <p id="userScrapeStatus" class="status-msg" style="margin-top: 1rem; text-align: center; font-size: 0.85rem;"></p>
+                
+                <div id="userProgressContainer" style="display: none; margin-top: 1rem;">
+                    <div class="progress-bar-bg">
+                        <div id="userProgressBar" class="progress-bar-fill"></div>
+                    </div>
+                    <p id="userProgressText" style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);"></p>
                 </div>
             </div>
         </div>

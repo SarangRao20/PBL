@@ -21,16 +21,32 @@ def cosine_similarity(a, b):
         return 0
 
 def embed_query(query):
-    response = requests.post(
-        OLLAMA_EMBED_URL,
-        json={
-            "model": EMBED_MODEL,
-            "prompt": query
-        },
-        timeout=30
-    )
-    response.raise_for_status()
-    return np.array(response.json()["embedding"])
+    """
+    Embeds a query using local Ollama with error handling.
+    """
+    try:
+        response = requests.post(
+            OLLAMA_EMBED_URL,
+            json={
+                "model": EMBED_MODEL,
+                "prompt": query
+            },
+            timeout=30
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if "embedding" not in result:
+            raise Exception("Ollama returned response without embedding")
+            
+        return np.array(result["embedding"])
+        
+    except requests.exceptions.Timeout:
+        raise Exception("Ollama embedding request timed out. Is Ollama running?")
+    except requests.exceptions.ConnectionError:
+        raise Exception("Cannot connect to Ollama. Please ensure Ollama is running at http://localhost:11434")
+    except Exception as e:
+        raise Exception(f"Embedding failed: {str(e)}")
 
 def retrieve_top_chunks(query_vec, role_filter="student", author_filter=None):
     """
@@ -127,33 +143,160 @@ You are a senior research assistant. Use the following chunks to answer:
 Negative Constraints (What NOT to do):
 {negative_constraints}
 
-INSTRUCTIONS:
-1. Maintain a high-end, academic tone.
-2. If the explanation involves a process, workflow, sequence, or architecture (especially coding), generate a Mermaid.js diagram.
-   Use the format: ```mermaid
-   [diagram code]
-   ```
-3. Do not use emojis. Use professional language.
-4. Keep citations subtle but factual. Mention specific sources if needed.
+CORE INSTRUCTIONS:
+1. Maintain a high-end, academic tone with clear, comprehensive explanations.
+2. Do not use emojis. Use professional language.
+3. Keep citations subtle but factual. Mention specific sources if needed.
+
+MERMAID DIAGRAM REQUIREMENTS:
+**ALWAYS generate a Mermaid diagram when the topic involves:**
+- Processes, workflows, or sequences
+- System architectures or data flows
+- Algorithms or decision trees
+- Relationships between concepts/components
+- Timelines or event sequences
+- Class structures or hierarchies
+
+**Mermaid Diagram Best Practices:**
+- Choose the RIGHT diagram type:
+  * `flowchart TD` or `flowchart LR` - for processes, algorithms, workflows
+  * `sequenceDiagram` - for interactions between entities over time
+  * `classDiagram` - for object-oriented structures and relationships
+  * `graph TD` or `graph LR` - for concept maps and relationships
+  * `stateDiagram-v2` - for state machines and transitions
+  * `journey` - for user journeys and experiences
+  * `gantt` - for timelines and project planning
+
+- Use DESCRIPTIVE node labels (not just A, B, C)
+- Add styling for clarity: `style nodeId fill:#f9f,stroke:#333,stroke-width:4px`
+- Use subgraphs for grouping related components
+- Include clear arrow labels for relationships
+- Keep diagrams readable: 5-15 nodes optimal, max 20
+- Use consistent naming conventions
+
+**Example Mermaid Formats:**
+
+For a process/workflow:
+```mermaid
+flowchart TD
+    Start([User Query]) --> Parse[Parse Input]
+    Parse --> Validate{{Valid?}}
+    Validate -->|Yes| Process[Process Request]
+    Validate -->|No| Error[Return Error]
+    Process --> Database[(Database)]
+    Database --> Response[Generate Response]
+    Response --> End([Return to User])
+    
+    style Start fill:#e1f5e1
+    style End fill:#e1f5e1
+    style Error fill:#ffe1e1
+```
+
+For system architecture:
+```mermaid
+graph TB
+    subgraph Frontend
+        UI[User Interface]
+        API[API Client]
+    end
+    
+    subgraph Backend
+        Server[Flask Server]
+        Auth[Authentication]
+        DB[(Database)]
+    end
+    
+    subgraph External
+        LLM[LLM Service]
+        Search[Web Search]
+    end
+    
+    UI --> API
+    API --> Server
+    Server --> Auth
+    Server --> DB
+    Server --> LLM
+    Server --> Search
+    
+    style Frontend fill:#e3f2fd
+    style Backend fill:#f3e5f5
+    style External fill:#fff3e0
+```
+
+For interactions:
+```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant Database
+    participant AI
+    
+    User->>System: Submit Query
+    System->>Database: Search Embeddings
+    Database-->>System: Return Results
+    alt High Confidence
+        System->>AI: Generate Answer
+        AI-->>System: Response
+    else Low Confidence
+        System->>Web: Search Online
+        Web-->>System: New Data
+        System->>AI: Generate Answer
+        AI-->>System: Response
+    end
+    System-->>User: Display Answer
+```
+
+**IMPORTANT**: Generate diagram BEFORE the detailed explanation. Place it at the start of your response for maximum impact.
+
+Format: 
+1. Brief introduction (1-2 sentences)
+2. Mermaid diagram (if applicable)
+3. Detailed explanation broken into clear sections
+4. Summary or key takeaways
 """
     full_prompt = f"{system_prompt}\n\nUSER QUESTION: {question}"
     return full_prompt.strip()
 
 def call_llm(prompt):
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "model": "openai/gpt-3.5-turbo",
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.2
-        },
-        timeout=60
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    """
+    Calls the LLM with better error handling.
+    Raises exceptions that should be caught by the caller.
+    """
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "openai/gpt-3.5-turbo",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        if "choices" not in result or len(result["choices"]) == 0:
+            raise Exception("LLM returned empty response")
+            
+        return result["choices"][0]["message"]["content"]
+        
+    except requests.exceptions.Timeout:
+        raise Exception("LLM API request timed out. Please try again.")
+    except requests.exceptions.ConnectionError:
+        raise Exception("Cannot connect to LLM API. Please check your internet connection.")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            raise Exception("LLM API authentication failed. Please check your API key.")
+        elif e.response.status_code == 429:
+            raise Exception("LLM API rate limit exceeded. Please try again later.")
+        else:
+            raise Exception(f"LLM API error: {e.response.status_code}")
+    except Exception as e:
+        # Re-raise with more context
+        raise Exception(f"LLM call failed: {str(e)}")

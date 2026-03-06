@@ -569,6 +569,34 @@ td {
     background-color: var(--bg-secondary);
 }
 
+/* --- TTS Button --- */
+.tts-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.tts-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.tts-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
 /* --- Research Insights / Citations --- */
 .research-insights {
     margin-top: 1.5rem;
@@ -633,9 +661,58 @@ td {
 }
 
 .mermaid-container {
-    background: #1e1e1e;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     overflow-x: auto;
+    margin: 1.5rem 0;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+.mermaid-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.5), transparent);
+    border-radius: 16px 16px 0 0;
+}
+
+.mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* Enhanced text readability in diagrams */
+.mermaid-container text {
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-weight: 500;
+}
+
+/* Smooth transitions for interactive elements */
+.mermaid-container .node rect,
+.mermaid-container .node circle,
+.mermaid-container .node ellipse,
+.mermaid-container .node polygon {
+    transition: all 0.3s ease;
+}
+
+/* Responsive diagram scaling */
+@media (max-width: 768px) {
+    .mermaid-container {
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .mermaid-container svg {
+        font-size: 14px;
+    }
 }
