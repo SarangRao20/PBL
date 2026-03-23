@@ -4,3 +4,4 @@
 data/chat_history.db
 /pycache
 *.pyc
+/node_modules
